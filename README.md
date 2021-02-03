@@ -99,7 +99,7 @@ None.
 Example Playbook
 ----------------
 
-Minimal example:
+Minimal example that uses all the defaults.
 
 ```yaml
 ---
@@ -108,14 +108,19 @@ Minimal example:
      - paulrentschler.elasticsearch
 ```
 
-More complex example that includes specifying ...
+More complex example that includes specifying the cluster name, Ansible host group, and index shard/replica values.
 
 ```yaml
 ---
-- hosts: all
+- hosts: searchservers
   roles:
     - role: paulrentschler.elasticsearch
       vars:
+        elasticsearch_cluster_name: haystack
+        elasticsearch_discovery_ansible_group: searchservers
+        elasticsearch_index:
+          shards: 5
+          replicas: 2
 ```
 
 
