@@ -14,15 +14,15 @@ elasticsearch_cluster_name: elasticsearch
 
 # Define this node
 elasticsearch_node:
-  name: "{{ inventory_hostname }}"
+  name: "{{ ansible_fqdn }}"
   primary: true
   data: true
   mandatory_plugins: ""
 
 elasticsearch_network:
-  host: "{{ ansible_eth0.ipv4.address }}"
-  http_host: "{{ ansible_lo.ipv4.address }}"
-  unicast_interface: 'ansible_eth0'
+  host: "{{ ansible_host }}"
+  http_host: "{{ ansible_host }}"
+  # unicast_interface: 'ansible_eth0'
 
 # The Ansible group of hosts running ElasticSearch
 elasticsearch_discovery_ansible_group: 'elasticsearch'
