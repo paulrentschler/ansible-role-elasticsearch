@@ -70,6 +70,8 @@
     deb: /usr/local/src/elasticsearch-1.7.6.deb
   become: yes
 
+
+
 - name: configure the elasticsearch environment defaults
   ansible.builtin.template:
     src: elasticsearch.j2
@@ -99,6 +101,16 @@
     mode: 0644
   register: _elasticsearch_log_conf_status
   become: yes
+
+
+##
+# Allow access through the firewall
+##
+- include_tasks: firewall.yml
+  when: elasticsearch_firewall|bool
+  tags:
+    - firewall_config
+
 
 - name: restart elasticsearch if configuration was changed
   ansible.builtin.service:

@@ -1,0 +1,38 @@
+---
+# Tasks to set firewall rules allowing access to ElasticSearch
+
+
+- name: combine the hosts and groups
+  set_fact:
+    elasticsearch_firewall_allow_hosts:
+      - "{{ elasticsearch_firewall_allow_hosts }}"
+      - "[{% for _group in elasticsearch_firewall_allow_groups %}{{ groups[_group] }}, {% endfor %}]"
+  tags:
+    - firewall_config
+
+- name: allow access to specific hosts
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ hostvars[item].ansible_host }}"
+    proto: tcp
+    to_port: "9200"
+  loop: "{{ elasticsearch_firewall_allow_hosts|flatten }}"
+  loop_control:
+    label: "{{ item }}"
+  become: yes
+  tags:
+    - firewall_config
+
+- name: allow access between ElasticSearch hosts
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ hostvars[item].ansible_host }}"
+    proto: tcp
+    to_port: "9300"
+  loop: "{{ groups[elasticsearch_discovery_ansible_group] }}"
+  loop_control:
+    label: "{{ item }}"
+  when: "item != ansible_hostname"
+  become: yes
+  tags:
+    - firewall_config

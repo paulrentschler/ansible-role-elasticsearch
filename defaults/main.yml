@@ -62,3 +62,23 @@ elasticsearch_index:
 # Set this property to true to lock the memory (false by default)
 elasticsearch_mlockall: false
 
+
+##
+# Firewall settings
+#
+# If the host supports the Ubuntu FireWall (UFW), these settings can be used
+# to allow access to the ElasticSearch server and to replicate to other
+# ElasticSearch servers through the firewall.
+##
+
+# Set to "yes" to indicate the firewall should be configured
+elasticsearch_firewall: no
+
+# Specify a list of Ansible hosts that should be allowed access
+elasticsearch_firewall_allow_hosts: []
+
+# Specify a list of Ansible groups that should be allowed access
+elasticsearch_firewall_allow_groups: []
+
+
+
