@@ -35,13 +35,12 @@ node.name: {{ elasticsearch_node.name }}
 # Every node can be configured to allow or deny being eligible as the primary,
 # and to allow or deny to store the data.
 #
-# Allow this node to be eligible as a primary node:
-#
-node.master: {% if elasticsearch_node.primary|bool %}true{% else %}false{% endif %}
-
-# Allow this node to store data (enabled by default):
-#
-node.data: {% if elasticsearch_node.data|bool %}true{% else %}false{% endif %}
+node.roles:
+    {% if elasticsearch_node.primary|bool %}- master{% endif %}
+    {% if elasticsearch_node.data|bool %}- data{% endif %}
+    - ingest
+    - ml
+    - remote_cluster_client
 
 # Use the Cluster Health API [http://localhost:9200/_cluster/health], the
 # Node Info API [http://localhost:9200/_cluster/nodes] or GUI tools
