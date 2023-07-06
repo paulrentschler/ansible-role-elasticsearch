@@ -1,2 +1,128 @@
 ---
-# tasks file for elasticsearch
+# Install and configure ElasticSearch
+
+# - name: disable cache updates
+#   ansible.builtin.apt:
+#     update_cache: no
+#   become: yes
+
+# - name: install elasticsearch signing key
+#   ansible.builtin.apt_key:
+#     # url: https://packages.elasticsearch.org/GPG-KEY-elasticsearch
+#     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+#     state: present
+#   become: yes
+
+# - name: install elasticsearch repository
+#   ansible.builtin.apt_repository:
+#     # repo: 'deb https://packages.elasticsearch.org/elasticsearch/1.7/debian stable main'
+#     repo: 'deb https://artifacts.elastic.co/packages/1.7/apt stable main'
+#     state: present
+#     update_cache: no
+#   become: yes
+
+# - name: enable cache updates
+#   ansible.builtin.apt:
+#     update_cache: yes
+#   become: yes
+
+# - name: install elasticsearch and dependencies
+#   ansible.builtin.package:
+#     name: "{{ item }}"
+#     update_cache: yes
+#     cache_valid_time: 86400
+#     state: present
+#   loop:
+#     - openjdk-7-jre-headless
+#     - elasticsearch
+#     - curl
+#     - python-passlib
+#   become: yes
+
+##
+## NOTE: installing the older 1.7.x releases does not seem to be possible
+##       via the normal apt system as the links are all broken.
+##       Thus we'll do it "the hard way" by downloading the deb file.
+##
+
+- name: download the deb file
+  ansible.builtin.get_url:
+    url: https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.deb
+    dest: /usr/local/src/elasticsearch-1.7.6.deb
+    owner: "{{ devops_user|default(ansible_user) }}"
+    group: "{{ devops_group|default('adm') }}"
+    mode: 0444
+  become: yes
+
+- name: install dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    update_cache: yes
+    state: present
+  loop:
+    - openjdk-8-jre-headless
+    - curl
+    - python-passlib
+  become: yes
+
+- name: install elasticsearch
+  ansible.builtin.apt:
+    deb: /usr/local/src/elasticsearch-1.7.6.deb
+  become: yes
+
+
+
+- name: configure the elasticsearch environment defaults
+  ansible.builtin.template:
+    src: elasticsearch.j2
+    dest: "{{ elasticsearch_defaults_file }}"
+    owner: root
+    group: root
+    mode: 0644
+  register: _elasticsearch_env_conf_status
+  become: yes
+
+- name: configure elasticsearch
+  ansible.builtin.template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+    owner: root
+    group: root
+    mode: 0644
+  register: _elasticsearch_conf_status
+  become: yes
+
+- name: configure the elasticsearch logging
+  ansible.builtin.template:
+    src: logging.yml.j2
+    dest: /etc/elasticsearch/logging.yml
+    owner: root
+    group: root
+    mode: 0644
+  register: _elasticsearch_log_conf_status
+  become: yes
+
+
+##
+# Allow access through the firewall
+##
+- include_tasks: firewall.yml
+  when: elasticsearch_firewall|bool
+  tags:
+    - firewall_config
+
+
+- name: restart elasticsearch if configuration was changed
+  ansible.builtin.service:
+    name: elasticsearch
+    state: restarted
+  become: yes
+  when: _elasticsearch_env_conf_status.changed or _elasticsearch_conf_status.changed or _elasticsearch_log_conf_status.changed
+
+
+- name: enable elasticsearch
+  ansible.builtin.service:
+    name: elasticsearch
+    enabled: yes
+    state: started
+  become: yes

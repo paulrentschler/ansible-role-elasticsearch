@@ -1,38 +1,140 @@
-Role Name
-=========
+paulrentschler.elasticsearch
+============================
 
-A brief description of the role goes here.
+[![MIT licensed][mit-badge]][mit-link]
+
+Installs and configures ElasticSearch on Ubuntu Linux
+
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+None.
+
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+The following variables are available with defaults defined in `defaults/main.yml`:
+
+Define the user and group to run ElasticSearch.
+
+    elasticsearch_user: elasticsearch
+    elasticsearch_group: elasticsearch
+
+
+Specify where the defaults file is stored.
+
+    elasticsearch_defaults_file: "/etc/default/elasticsearch"
+
+
+The "cluster name" to identify the cluster to the nodes for auto-discovery.
+
+    elasticsearch_cluster_name: elasticsearch
+
+
+Name and settings for this node/host. `primary: true` means that this node/host can become the primary one. `data: true` means that this node/host can store data.
+
+```yaml
+elasticsearch_node:
+  name: "{{ inventory_hostname }}"
+  primary: true
+  data: true
+  mandatory_plugins: ""
+```
+
+Define the network information for this node/host.
+
+```yaml
+elasticsearch_network:
+  host: "{{ ansible_eth0.ipv4.address }}"
+  http_host: "{{ ansible_lo.ipv4.address }}"
+  unicast_interface: 'ansible_eth0'
+```
+
+
+Specify the Ansible group of hosts running ElasticSearch. This is used to specify all the nodes/hosts in the cluster.
+
+    elasticsearch_discovery_ansible_group: 'elasticsearch'
+
+
+Define the settings for indexes.
+
+Note: for development it makes sense to "disable" the distributed features:
+
+- shards: 1
+- replicas: 0
+
+These settings directly affect the performance of index and search operations in your cluster. Assuming you have enough machines to hold shards and replicas, the rule of thumb is:
+
+1. Having more *shards* enhances the _indexing_ performance and allows to _distribute_ a big index across machines.
+1. Having more *replicas* enhances the _search_ performance and improves the cluster _availability_.
+
+The "shards" is a one-time setting for an index.
+
+The "replicas" can be increased or decreased anytime, by using the Index Update Settings API.
+
+ElasticSearch takes care of load balancing, relocating, gathering the results from nodes, etc. Experiment with different settings to fine-tune your setup.
+
+```yaml
+elasticsearch_index:
+  shards: 5
+  replicas: 1
+```
+
+
+ElasticSearch performs poorly when JVM starts swapping, you should ensure that it _never_ swaps.
+
+Set this property to true to lock the memory (false by default)
+
+    elasticsearch_mlockall: false
+
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+None.
+
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+Minimal example that uses all the defaults.
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+```yaml
+---
+- hosts: all
+  roles:
+     - paulrentschler.elasticsearch
+```
+
+More complex example that includes specifying the cluster name, Ansible host group, and index shard/replica values.
+
+```yaml
+---
+- hosts: searchservers
+  roles:
+    - role: paulrentschler.elasticsearch
+      vars:
+        elasticsearch_cluster_name: haystack
+        elasticsearch_discovery_ansible_group: searchservers
+        elasticsearch_index:
+          shards: 5
+          replicas: 2
+```
+
 
 License
 -------
 
-BSD
+[MIT][mit-link]
+
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Created by Paul Rentschler in 2021.
+
+
+[mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[mit-link]: https://github.com/paulrentschler/ansible-role-elasticsearch/blob/master/LICENSE

@@ -1,2 +1,84 @@
 ---
-# defaults file for elasticsearch
+# defaults for ElasticSearch related variables
+
+# User and group to run ElasticSearch as
+elasticsearch_user: elasticsearch
+elasticsearch_group: elasticsearch
+
+# Where the defaults file is stored
+elasticsearch_defaults_file: "/etc/default/elasticsearch"
+
+
+# Cluster name to identify the cluster to the nodes for auto-discovery
+elasticsearch_cluster_name: elasticsearch
+
+# Define this node
+elasticsearch_node:
+  name: "{{ ansible_fqdn }}"
+  primary: true
+  data: true
+  mandatory_plugins: ""
+
+elasticsearch_network:
+  host: "{{ ansible_host }}"
+  http_host: "{{ ansible_host }}"
+  # unicast_interface: 'ansible_eth0'
+
+# The Ansible group of hosts running ElasticSearch
+elasticsearch_discovery_ansible_group: 'elasticsearch'
+
+
+# Define the index settings
+#
+# Note: for development it makes sense to "disable" the distributed features:
+#    shards: 1
+#    replicas: 0
+#
+# These settings directly affect the performance of index and search operations
+# in your cluster. Assuming you have enough machines to hold shards and
+# replicas, the rule of thumb is:
+#
+# 1. Having more *shards* enhances the _indexing_ performance and allows to
+#    _distribute_ a big index across machines.
+# 2. Having more *replicas* enhances the _search_ performance and improves the
+#    cluster _availability_.
+#
+# The "shards" is a one-time setting for an index.
+#
+# The "replicas" can be increased or decreased anytime,
+# by using the Index Update Settings API.
+#
+# ElasticSearch takes care of load balancing, relocating, gathering the
+# results from nodes, etc. Experiment with different settings to fine-tune
+# your setup.
+elasticsearch_index:
+  shards: 5
+  replicas: 1
+
+
+# ElasticSearch performs poorly when JVM starts swapping,
+# you should ensure that it _never_ swaps.
+#
+# Set this property to true to lock the memory (false by default)
+elasticsearch_mlockall: false
+
+
+##
+# Firewall settings
+#
+# If the host supports the Ubuntu FireWall (UFW), these settings can be used
+# to allow access to the ElasticSearch server and to replicate to other
+# ElasticSearch servers through the firewall.
+##
+
+# Set to "yes" to indicate the firewall should be configured
+elasticsearch_firewall: no
+
+# Specify a list of Ansible hosts that should be allowed access
+elasticsearch_firewall_allow_hosts: []
+
+# Specify a list of Ansible groups that should be allowed access
+elasticsearch_firewall_allow_groups: []
+
+
+
