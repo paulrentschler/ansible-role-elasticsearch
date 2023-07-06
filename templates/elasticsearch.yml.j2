@@ -62,13 +62,13 @@ node.data: {% if elasticsearch_node.data|bool %}true{% else %}false{% endif %}
 
 # ----------------------------------- Index ------------------------------------
 #
-# Set the number of shards (splits) of an index (5 by default):
+# Set the number of shards (splits) of an index:
 #
-index.number_of_shards: {{ elasticsearch_index.shards }}
+index.number_of_shards: {{ elasticsearch_index.shards|default(1) }}
 
-# Set the number of replicas (additional copies) of an index (1 by default):
+# Set the number of replicas (additional copies) of an index:
 #
-index.number_of_replicas: {{ elasticsearch_index.replicas }}
+index.number_of_replicas: {{ elasticsearch_index.replicas|default(0) }}
 
 
 # ----------------------------------- Paths ------------------------------------

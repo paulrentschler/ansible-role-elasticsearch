@@ -55,8 +55,8 @@ elasticsearch_discovery_ansible_group: 'elasticsearch'
 # results from nodes, etc. Experiment with different settings to fine-tune
 # your setup.
 elasticsearch_index:
-  shards: 5
-  replicas: 1
+  shards: 1
+  replicas: 0
 
 
 # ElasticSearch performs poorly when JVM starts swapping,
