@@ -11,6 +11,13 @@ elasticsearch_group: elasticsearch
 # Where the defaults file is stored
 elasticsearch_defaults_file: "/etc/default/elasticsearch"
 
+# Installation/configuration paths (Debian-based)
+elasticsearch_home: "/usr/share/elasticsearch"
+elasticsearch_conf: "/etc/elasticsearch"
+
+# Bootstrap user - username/password
+elasticsearch_api_basic_auth_username: "elastic"
+elasticsearch_api_basic_auth_password: ""
 
 # Cluster name to identify the cluster to the nodes for auto-discovery
 elasticsearch_cluster_name: elasticsearch
