@@ -36,8 +36,12 @@ node.name: {{ elasticsearch_node.name }}
 # and to allow or deny to store the data.
 #
 node.roles:
-    {% if elasticsearch_node.primary|bool %}- master{% endif %}
-    {% if elasticsearch_node.data|bool %}- data{% endif %}
+{% if elasticsearch_node.primary|bool %}
+    - master
+{% endif %}
+{% if elasticsearch_node.data|bool %}
+    - data
+{% endif %}
     - ingest
     - ml
     - remote_cluster_client
