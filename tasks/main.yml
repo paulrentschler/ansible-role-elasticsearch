@@ -9,6 +9,8 @@
   ansible.builtin.apt:
     update_cache: no
   become: yes
+  tags:
+    - elasticsearch_install
 
 - name: install elasticsearch signing key
   ansible.builtin.apt_key:
@@ -16,6 +18,8 @@
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
   become: yes
+  tags:
+    - elasticsearch_install
 
 - name: install elasticsearch repository
   ansible.builtin.apt_repository:
@@ -24,11 +28,15 @@
     state: present
     update_cache: no
   become: yes
+  tags:
+    - elasticsearch_install
 
 - name: enable cache updates
   ansible.builtin.apt:
     update_cache: yes
   become: yes
+  tags:
+    - elasticsearch_install
 
 - name: install elasticsearch and dependencies
   ansible.builtin.package:
@@ -42,6 +50,8 @@
     - curl
     # - python-passlib
   become: yes
+  tags:
+    - elasticsearch_install
 
 ##
 ## NOTE: installing the older 1.7.x releases does not seem to be possible
@@ -89,6 +99,9 @@
     mode: 0644
   register: _elasticsearch_env_conf_status
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
 
 - name: configure elasticsearch
   ansible.builtin.template:
@@ -99,6 +112,9 @@
     mode: 0644
   register: _elasticsearch_conf_status
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
 
 # - name: configure the elasticsearch logging
 #   ansible.builtin.template:
@@ -182,6 +198,9 @@
     - elasticsearch_api_basic_auth_password != ''
     - elasticsearch_api_basic_auth_password|length > 10
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
 
 # Make sure elasticsearch.keystore has correct Permissions
 - name: set elasticsearch.keystore Permissions
@@ -192,6 +211,9 @@
     group: "{{ elasticsearch_group }}"
     mode: "0660"
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
 
 
 
@@ -201,6 +223,8 @@
 - include_tasks: firewall.yml
   when: elasticsearch_firewall|bool
   tags:
+    - elasticsearch_firewall
+    - elasticsearch_install
     - firewall_config
 
 
@@ -210,7 +234,8 @@
     state: restarted
   become: yes
   when: _elasticsearch_env_conf_status.changed or _elasticsearch_conf_status.changed or _elasticsearch_log_conf_status.changed
-
+  tags:
+    - always
 
 - name: enable elasticsearch
   ansible.builtin.service:
@@ -218,3 +243,6 @@
     enabled: yes
     state: started
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
