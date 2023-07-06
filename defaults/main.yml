@@ -1,6 +1,9 @@
 ---
 # defaults for ElasticSearch related variables
 
+# Version to install
+elasticsearch_version: "7.x"
+
 # User and group to run ElasticSearch as
 elasticsearch_user: elasticsearch
 elasticsearch_group: elasticsearch
