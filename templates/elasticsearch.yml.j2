@@ -63,17 +63,6 @@ node.roles:
 # node.max_local_storage_nodes: 1
 
 
-# ----------------------------------- Index ------------------------------------
-#
-# Set the number of shards (splits) of an index:
-#
-index.number_of_shards: {{ elasticsearch_index.shards|default(1) }}
-
-# Set the number of replicas (additional copies) of an index:
-#
-index.number_of_replicas: {{ elasticsearch_index.replicas|default(0) }}
-
-
 # ----------------------------------- Paths ------------------------------------
 #
 # Path to directory containing configuration (this file and logging.yml):

@@ -38,34 +38,6 @@ elasticsearch_network:
 elasticsearch_discovery_ansible_group: 'elasticsearch'
 
 
-# Define the index settings
-#
-# Note: for development it makes sense to "disable" the distributed features:
-#    shards: 1
-#    replicas: 0
-#
-# These settings directly affect the performance of index and search operations
-# in your cluster. Assuming you have enough machines to hold shards and
-# replicas, the rule of thumb is:
-#
-# 1. Having more *shards* enhances the _indexing_ performance and allows to
-#    _distribute_ a big index across machines.
-# 2. Having more *replicas* enhances the _search_ performance and improves the
-#    cluster _availability_.
-#
-# The "shards" is a one-time setting for an index.
-#
-# The "replicas" can be increased or decreased anytime,
-# by using the Index Update Settings API.
-#
-# ElasticSearch takes care of load balancing, relocating, gathering the
-# results from nodes, etc. Experiment with different settings to fine-tune
-# your setup.
-elasticsearch_index:
-  shards: 1
-  replicas: 0
-
-
 # ElasticSearch performs poorly when JVM starts swapping,
 # you should ensure that it _never_ swaps.
 #
