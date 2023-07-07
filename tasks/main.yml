@@ -1,43 +1,57 @@
 ---
 # Install and configure ElasticSearch
 
-# - name: disable cache updates
-#   ansible.builtin.apt:
-#     update_cache: no
-#   become: yes
+##
+# Install ElasticSearch
+##
 
-# - name: install elasticsearch signing key
-#   ansible.builtin.apt_key:
-#     # url: https://packages.elasticsearch.org/GPG-KEY-elasticsearch
-#     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
-#     state: present
-#   become: yes
+- name: disable cache updates
+  ansible.builtin.apt:
+    update_cache: no
+  become: yes
+  tags:
+    - elasticsearch_install
 
-# - name: install elasticsearch repository
-#   ansible.builtin.apt_repository:
-#     # repo: 'deb https://packages.elasticsearch.org/elasticsearch/1.7/debian stable main'
-#     repo: 'deb https://artifacts.elastic.co/packages/1.7/apt stable main'
-#     state: present
-#     update_cache: no
-#   become: yes
+- name: install elasticsearch signing key
+  ansible.builtin.apt_key:
+    # url: https://packages.elasticsearch.org/GPG-KEY-elasticsearch
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  become: yes
+  tags:
+    - elasticsearch_install
 
-# - name: enable cache updates
-#   ansible.builtin.apt:
-#     update_cache: yes
-#   become: yes
+- name: install elasticsearch repository
+  ansible.builtin.apt_repository:
+    # repo: 'deb https://packages.elasticsearch.org/elasticsearch/1.7/debian stable main'
+    repo: 'deb https://artifacts.elastic.co/packages/{{ elasticsearch_version }}/apt stable main'
+    state: present
+    update_cache: no
+  become: yes
+  tags:
+    - elasticsearch_install
 
-# - name: install elasticsearch and dependencies
-#   ansible.builtin.package:
-#     name: "{{ item }}"
-#     update_cache: yes
-#     cache_valid_time: 86400
-#     state: present
-#   loop:
-#     - openjdk-7-jre-headless
-#     - elasticsearch
-#     - curl
-#     - python-passlib
-#   become: yes
+- name: enable cache updates
+  ansible.builtin.apt:
+    update_cache: yes
+  become: yes
+  tags:
+    - elasticsearch_install
+
+- name: install elasticsearch and dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    update_cache: yes
+    cache_valid_time: 86400
+    state: present
+  loop:
+    # - openjdk-7-jre-headless
+    - elasticsearch
+    - curl
+    # - python-passlib
+  become: yes
+  tags:
+    - elasticsearch_install
 
 ##
 ## NOTE: installing the older 1.7.x releases does not seem to be possible
@@ -45,32 +59,36 @@
 ##       Thus we'll do it "the hard way" by downloading the deb file.
 ##
 
-- name: download the deb file
-  ansible.builtin.get_url:
-    url: https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.deb
-    dest: /usr/local/src/elasticsearch-1.7.6.deb
-    owner: "{{ devops_user|default(ansible_user) }}"
-    group: "{{ devops_group|default('adm') }}"
-    mode: 0444
-  become: yes
+# - name: download the deb file
+#   ansible.builtin.get_url:
+#     url: https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.deb
+#     dest: /usr/local/src/elasticsearch-1.7.6.deb
+#     owner: "{{ devops_user|default(ansible_user) }}"
+#     group: "{{ devops_group|default('adm') }}"
+#     mode: 0444
+#   become: yes
 
-- name: install dependencies
-  ansible.builtin.package:
-    name: "{{ item }}"
-    update_cache: yes
-    state: present
-  loop:
-    - openjdk-8-jre-headless
-    - curl
-    - python-passlib
-  become: yes
+# - name: install dependencies
+#   ansible.builtin.package:
+#     name: "{{ item }}"
+#     update_cache: yes
+#     state: present
+#   loop:
+#     - openjdk-8-jre-headless
+#     - curl
+#     - python-passlib
+#   become: yes
 
-- name: install elasticsearch
-  ansible.builtin.apt:
-    deb: /usr/local/src/elasticsearch-1.7.6.deb
-  become: yes
+# - name: install elasticsearch
+#   ansible.builtin.apt:
+#     deb: /usr/local/src/elasticsearch-1.7.6.deb
+#   become: yes
 
 
+
+##
+# Configure ElasticSearch
+##
 
 - name: configure the elasticsearch environment defaults
   ansible.builtin.template:
@@ -81,6 +99,9 @@
     mode: 0644
   register: _elasticsearch_env_conf_status
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
 
 - name: configure elasticsearch
   ansible.builtin.template:
@@ -91,16 +112,109 @@
     mode: 0644
   register: _elasticsearch_conf_status
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
 
-- name: configure the elasticsearch logging
-  ansible.builtin.template:
-    src: logging.yml.j2
-    dest: /etc/elasticsearch/logging.yml
-    owner: root
-    group: root
-    mode: 0644
-  register: _elasticsearch_log_conf_status
+# - name: configure the elasticsearch logging
+#   ansible.builtin.template:
+#     src: logging.yml.j2
+#     dest: /etc/elasticsearch/logging.yml
+#     owner: root
+#     group: root
+#     mode: 0644
+#   register: _elasticsearch_log_conf_status
+#   become: yes
+
+
+
+##
+# Configure the default user/password (i.e., bootstrap user)
+#
+# Borrowed from the official Ansible ElasticSearch role
+# https://github.com/elastic/ansible-elasticsearch
+##
+
+- name: create the elasticsearch keystore
+  block:
+    - name: create the keystore if it doesn't exist yet
+      ansible.builtin.command: >
+       {{ elasticsearch_home }}/bin/elasticsearch-keystore create
+      args:
+        creates: "{{ elasticsearch_conf }}/elasticsearch.keystore"
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf }}"
+
+    - name: check if bootstrap password is set
+      ansible.builtin.command: >
+       {{ elasticsearch_home }}/bin/elasticsearch-keystore list
+      register: list_keystore
+      changed_when: False
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf }}"
+      check_mode: no
+
+    - name: create Bootstrap password for elastic user
+      ansible.builtin.shell: echo {{ elasticsearch_api_basic_auth_password | quote }} | {{ elasticsearch_home }}/bin/elasticsearch-keystore add -x 'bootstrap.password'
+      when:
+        - elasticsearch_api_basic_auth_username is defined and list_keystore is defined and elasticsearch_api_basic_auth_username == 'elastic' and 'bootstrap.password' not in list_keystore.stdout_lines
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf }}"
+      no_log: true
+
+    - name: remove keystore entries
+      ansible.builtin.command: >
+       {{ elasticsearch_home }}/bin/elasticsearch-keystore remove '{{ item.key }}'
+      with_items: "{{ es_keystore_entries }}"
+      when:
+        - es_keystore_entries is defined and es_keystore_entries | length > 0
+        - item.state is defined and item.state == 'absent'
+        - item.key in list_keystore.stdout_lines
+        - ('bootstrap.password' not in item.key)
+      no_log: true
+
+    - name: reload keystore entries
+      ansible.builtin.command: >
+       {{ elasticsearch_home }}/bin/elasticsearch-keystore list
+      register: list_keystore
+      changed_when: False
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf }}"
+      check_mode: no
+
+    - name: add keystore entries
+      ansible.builtin.shell: echo {{ item.value | quote }} | {{ elasticsearch_home }}/bin/elasticsearch-keystore add -x -f {{ item.key }}
+      with_items: "{{ es_keystore_entries }}"
+      when:
+        - es_keystore_entries is defined and es_keystore_entries | length > 0
+        - item.state is undefined or item.state == 'present'
+        - item.force|default(False) or ( not item.force|default(False) and item.key not in list_keystore.stdout_lines )
+        - ('bootstrap.password' not in item.key)
+      no_log: true
+  when:
+    - elasticsearch_api_basic_auth_username is defined
+    - elasticsearch_api_basic_auth_username == 'elastic'
+    - elasticsearch_api_basic_auth_password is defined
+    - elasticsearch_api_basic_auth_password != ''
+    - elasticsearch_api_basic_auth_password|length > 10
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
+
+# Make sure elasticsearch.keystore has correct Permissions
+- name: set elasticsearch.keystore Permissions
+  ansible.builtin.file:
+    state: file
+    path: "{{ elasticsearch_conf }}/elasticsearch.keystore"
+    owner: root
+    group: "{{ elasticsearch_group }}"
+    mode: "0660"
+  become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install
+
 
 
 ##
@@ -109,6 +223,8 @@
 - include_tasks: firewall.yml
   when: elasticsearch_firewall|bool
   tags:
+    - elasticsearch_firewall
+    - elasticsearch_install
     - firewall_config
 
 
@@ -117,8 +233,9 @@
     name: elasticsearch
     state: restarted
   become: yes
-  when: _elasticsearch_env_conf_status.changed or _elasticsearch_conf_status.changed or _elasticsearch_log_conf_status.changed
-
+  when: _elasticsearch_env_conf_status.changed|default(false) or _elasticsearch_conf_status.changed|default(false) or _elasticsearch_log_conf_status.changed|default(false)
+  tags:
+    - always
 
 - name: enable elasticsearch
   ansible.builtin.service:
@@ -126,3 +243,6 @@
     enabled: yes
     state: started
   become: yes
+  tags:
+    - elasticsearch_config
+    - elasticsearch_install

@@ -5,56 +5,57 @@
 # Do NOT modify this file by hand!
 #
 
-# Run ElasticSearch as this user and group
-{% if ansible_os_family == "RedHat" %}
-# This setting only works for the init script, but has to be configured
-# separately for systemd startup
-{% endif %}
-ES_USER={{ elasticsearch_user }}
-ES_GROUP={{ elasticsearch_group }}
 
-# Heap Size (defaults to 256m min, 1g max)
-#ES_HEAP_SIZE=2g
+################################
+# Elasticsearch
+################################
 
-# Heap new generation
-#ES_HEAP_NEWSIZE=
+# Elasticsearch home directory
+#ES_HOME=/usr/share/elasticsearch
 
-# max direct memory
-#ES_DIRECT_SIZE=
+# Elasticsearch Java path
+#ES_JAVA_HOME=
+
+# Elasticsearch configuration directory
+# Note: this setting will be shared with command-line tools
+ES_PATH_CONF=/etc/elasticsearch
+
+# Elasticsearch PID directory
+#PID_DIR=/var/run/elasticsearch
 
 # Additional Java OPTS
 #ES_JAVA_OPTS=
 
-# Maximum number of open files
-MAX_OPEN_FILES=65535
+# Configure restart on package upgrade (true, every other setting will lead to not restarting)
+#RESTART_ON_UPGRADE=true
 
-# Maximum amount of locked memory
-# Set to "unlimited" if you use the bootstrap.mlockall option in
-# elasticsearch.yml. You must also set ES_HEAP_SIZE.
+################################
+# Elasticsearch service
+################################
+
+# SysV init.d
+#
+# The number of seconds to wait before checking if Elasticsearch started successfully as a daemon process
+ES_STARTUP_SLEEP_TIME=5
+
+################################
+# System properties
+################################
+
+# Specifies the maximum file descriptor number that can be opened by this process
+# When using Systemd, this setting is ignored and the LimitNOFILE defined in
+# /usr/lib/systemd/system/elasticsearch.service takes precedence
+#MAX_OPEN_FILES=65535
+
+# The maximum number of bytes of memory that may be locked into RAM
+# Set to "unlimited" if you use the 'bootstrap.memory_lock: true' option
+# in elasticsearch.yml.
+# When using systemd, LimitMEMLOCK must be set in a unit file such as
+# /etc/systemd/system/elasticsearch.service.d/override.conf.
 #MAX_LOCKED_MEMORY=unlimited
 
 # Maximum number of VMA (Virtual Memory Areas) a process can own
-MAX_MAP_COUNT=262144
-
-# ElasticSearch binary directory
-ES_HOME=/usr/share/elasticsearch
-
-# ElasticSearch log directory
-LOG_DIR=/var/log/elasticsearch
-
-# ElasticSearch data directory
-DATA_DIR=/var/lib/elasticsearch
-
-# ElasticSearch work directory
-WORK_DIR=/tmp/elasticsearch
-
-# ElasticSearch conf directory
-CONF_DIR=/etc/elasticsearch
-
-# ElasticSearch configuration file (elasticsearch.yml)
-CONF_FILE=/etc/elasticsearch/elasticsearch.yml
-
-
-# Configure restart on package upgrade (true, every other setting will lead to not restarting)
-#RESTART_ON_UPGRADE=true
+# When using Systemd, this setting is ignored and the 'vm.max_map_count'
+# property is set at boot time in /usr/lib/sysctl.d/elasticsearch.conf
+#MAX_MAP_COUNT=262144
 

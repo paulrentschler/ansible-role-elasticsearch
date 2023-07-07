@@ -8,6 +8,8 @@
       - "{{ elasticsearch_firewall_allow_hosts }}"
       - "[{% for _group in elasticsearch_firewall_allow_groups %}{{ groups[_group] }}, {% endfor %}]"
   tags:
+    - elasticsearch_firewall
+    - elasticsearch_install
     - firewall_config
 
 - name: allow access to specific hosts
@@ -21,6 +23,8 @@
     label: "{{ item }}"
   become: yes
   tags:
+    - elasticsearch_firewall
+    - elasticsearch_install
     - firewall_config
 
 - name: allow access between ElasticSearch hosts
@@ -35,4 +39,6 @@
   when: "item != ansible_hostname"
   become: yes
   tags:
+    - elasticsearch_firewall
+    - elasticsearch_install
     - firewall_config
