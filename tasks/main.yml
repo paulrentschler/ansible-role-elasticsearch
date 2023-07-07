@@ -233,7 +233,7 @@
     name: elasticsearch
     state: restarted
   become: yes
-  when: _elasticsearch_env_conf_status.changed or _elasticsearch_conf_status.changed or _elasticsearch_log_conf_status.changed
+  when: _elasticsearch_env_conf_status.changed|default(false) or _elasticsearch_conf_status.changed|default(false) or _elasticsearch_log_conf_status.changed|default(false)
   tags:
     - always
 
